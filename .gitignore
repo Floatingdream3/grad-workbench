@@ -1,0 +1,18 @@
+# 本地数据与密钥（不入库）
+data/
+*.log
+papers/
+
+# 依赖
+node_modules/
+__pycache__/
+*.pyc
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 系统
+.DS_Store
+Thumbs.db

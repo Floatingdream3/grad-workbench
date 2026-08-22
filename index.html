@@ -1,0 +1,1152 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<script>
+/* file:// 双击打开时：本地服务可用则静默跳到 http 版（浏览器限制 file:// 加载脚本，http 稳定）；
+   服务不可用则保持原页面不打扰，仅在右上角显示一条可关闭的小提示 */
+(function () {
+  if (location.protocol !== 'file:') return;
+  var img = new Image();
+  img.onload = function () { location.replace('http://127.0.0.1:8899/index.html'); };
+  img.onerror = function () {
+    var b = document.createElement('div');
+    b.style.cssText = 'position:fixed;top:12px;right:12px;z-index:999999;background:#fff7e6;border:1px solid #ffd591;color:#8a5a00;padding:8px 14px;border-radius:10px;font:13px/1.5 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.12);display:flex;gap:10px;align-items:center';
+    b.innerHTML = '页面功能受限（本地服务未启动），可稍后刷新<br>建议收藏地址 <b>http://127.0.0.1:8899</b> 使用<button style="border:none;background:none;cursor:pointer;font-size:14px;color:#8a5a00">✕</button>';
+    b.querySelector('button').onclick = function () { b.remove(); };
+    document.body.appendChild(b);
+  };
+  img.src = 'http://127.0.0.1:8899/index.html?_t=' + Date.now();
+})();
+</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>读研工作台</title>
+<link rel="stylesheet" href="style.css?v=20260820">
+</head>
+<body>
+
+<!-- ================= 左侧导航栏 ================= -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <span class="logo">🌱</span>
+    <span class="brand">读研工作台</span>
+    <button class="hamburger" id="hamburgerBtn" title="快捷菜单">☰</button>
+    <div class="hamburger-menu" id="hamburgerMenu">
+      <div class="hm-title">🌗 显示主题</div>
+      <button class="hm-item" data-theme-mode="auto">🖥️ 跟随系统</button>
+      <button class="hm-item" data-theme-mode="light">☀️ 浅色</button>
+      <button class="hm-item" data-theme-mode="dark">🌙 深色</button>
+      <div class="hm-sep"></div>
+      <button class="hm-item" data-hm="search">🔍 全局搜索 <kbd>Ctrl K</kbd></button>
+      <button class="hm-item" data-hm="backup">💾 备份数据</button>
+      <button class="hm-item" data-hm="cmd">⌨️ 命令面板 <kbd>/</kbd></button>
+    </div>
+  </div>
+
+  <button class="search-trigger" id="globalSearchBtn">🔍 全局搜索 <kbd>Ctrl K</kbd></button>
+
+  <nav class="nav" id="nav">
+    <a class="nav-item active" data-page="home">🏠 首页</a>
+    <a class="nav-item" data-page="summary">📝 工作总结</a>
+    <a class="nav-item" data-page="calendar">📅 工作日历</a>
+    <a class="nav-item" data-page="radar">📡 文献雷达</a>
+    <a class="nav-item" data-page="library">📚 我的文献库</a>
+    <a class="nav-item" data-page="analysis">🔬 文献分析</a>
+    <a class="nav-item" data-page="submission">✉️ 投稿管理</a>
+    <a class="nav-item" data-page="articles">✍️ 文章管理</a>
+    <a class="nav-item" data-page="english">🌐 英语学习</a>
+    <a class="nav-item" data-page="fitness">💪 健身记录</a>
+    <a class="nav-item" data-page="sites">🔗 网站索引</a>
+    <a class="nav-item" data-page="task">✅ 任务清单</a>
+    <a class="nav-item" data-page="notes">📝 研究笔记</a>
+    <a class="nav-item" data-page="api">🔑 API 管理</a>
+    <a class="nav-item" data-page="agent">🤖 Agent 助手</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-mini-btn" id="backupBtn" title="数据备份/恢复">💾 数据备份</button>
+    <div class="bridge-ind off" id="bridgeInd">🔌 Agent 桥未连接</div>
+    <div class="ver">V1.0 · 正式版</div>
+  </div>
+</aside>
+
+<!-- Agent 结果提示条 -->
+<div class="agent-toast" id="agentToast">
+  <span class="agent-toast-text"></span>
+  <button class="primary-btn" id="agentImportBtn" style="padding:6px 14px;font-size:12.5px">查看导入</button>
+</div>
+
+<!-- ================= 主内容区 ================= -->
+<main class="main">
+
+  <!-- ===== 首页（状态仪表盘） ===== -->
+  <section id="home" class="page active">
+    <div class="hero-card">
+      <div class="hero-left">
+        <div class="hero-greeting"><span id="greetWord">下午好</span>，<span id="greetIcon">🌤️</span></div>
+        <div class="hero-date" id="heroDate">2026年8月4日星期二</div>
+        <div class="hero-quote" id="heroQuote">"In the long run, we are all dead. But in the short run, we publish." <span class="quote-src">— 学术圈改编</span></div>
+        <div class="hero-weather" id="heroWeather">
+          <span class="w-icon" id="wIcon">⏳</span>
+          <span class="w-text" id="wText">定位中…</span>
+          <span class="w-refresh" id="wRefresh" title="刷新天气">🔄</span>
+          <span class="w-locate" id="wLocate" title="重新定位">📍</span>
+          <span class="w-locate" id="wPin" title="手动指定城市">📌</span>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="clock" id="clock">00:00:00</div>
+        <div class="clock-date" id="clockDate">2026/08/04 周二</div>
+        <div class="day-progress">
+          <div class="progress-label">今日已过 <span id="dayPct">0.0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="dayFill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-row" id="ovRow">
+      <div class="ov-card" data-ov="library"><div class="ov-icon">📚</div><div class="ov-main"><b id="ovLib">0</b><span>文献总数</span></div></div>
+      <div class="ov-card" data-ov="summary"><div class="ov-icon">📝</div><div class="ov-main"><b id="ovSum">0</b><span>今日记录</span></div></div>
+      <div class="ov-card" data-ov="english"><div class="ov-icon">🔥</div><div class="ov-main"><b id="ovEng">0</b><span>英语连续天数</span></div></div>
+      <div class="ov-card" data-ov="fitness"><div class="ov-icon">💪</div><div class="ov-main"><b id="ovFit">0</b><span>本月健身</span></div></div>
+      <div class="ov-card" data-ov="submission"><div class="ov-icon">📨</div><div class="ov-main"><b id="ovSub">0</b><span>投稿进行中</span></div></div>
+      <div class="ov-card" data-ov="calendar"><div class="ov-icon">📅</div><div class="ov-main"><b id="ovEvt">0</b><span>今日日程</span></div></div>
+      <div class="ov-card" data-ov="task"><div class="ov-icon">✅</div><div class="ov-main"><b id="ovTask">0</b><span>待完成任务</span></div></div>
+    </div>
+
+    <div class="home-cards" id="homeCards"></div>
+
+    <div class="home-grid tri">
+      <div class="panel">
+        <div class="panel-head">📅 今日日程 <button class="panel-btn" data-page="calendar">去日历 →</button></div>
+        <div class="panel-body" id="todayEvents">
+          <div class="mini-empty">今天还没有日程安排<br><span class="mini-hint">去「工作日历」添加</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">📊 本周工作时长</div>
+        <div class="panel-body">
+          <div class="bar-chart" id="barChart"></div>
+          <div class="bar-total" id="barTotal">本周合计 0 小时</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">🔄 最近动态</div>
+        <div class="panel-body" id="recentFeed">
+          <div class="mini-empty">暂无动态<br><span class="mini-hint">记录工作、打卡、训练后会出现在这里</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-grid duo">
+      <div class="panel">
+        <div class="panel-head">📚 最新文献 <button class="panel-btn" data-page="library">文献库 →</button></div>
+        <div class="panel-body" id="litFeed">
+          <div class="mini-empty">文献库还空着<br><span class="mini-hint">去「我的文献库」导入 Zotero 文献</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">📡 雷达推荐 <button class="panel-btn" data-page="radar">雷达 →</button></div>
+        <div class="panel-body" id="radarFeed">
+          <div class="mini-empty">暂无推荐<br><span class="mini-hint">在「文献雷达」配置学者/期刊后自动推荐</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="agentFeedBox" hidden style="flex-shrink:0;margin-top:14px">
+      <div class="panel-head">🤖 Agent 动态 <span class="hint-text">最近做了什么</span></div>
+      <div class="panel-body" id="agentFeed" style="flex-direction:row;flex-wrap:wrap;gap:8px"></div>
+    </div>
+
+    <div class="mile-row">
+      <div class="mile-card">
+        <div class="mile-icon">🎯</div>
+        <div class="mile-main">距返校还有 <b id="backCount">--</b> 天</div>
+        <div class="mile-sub" id="backSub">2026-08-12 · 兰州</div>
+      </div>
+      <div class="mile-card">
+        <div class="mile-icon">📆</div>
+        <div class="mile-main">秋季学期</div>
+        <div class="mile-bar"><div class="mile-fill" id="semFill"></div></div>
+        <div class="mile-sub" id="semText">2026-09-01 开学</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 工作总结 ===== -->
+  <section id="summary" class="page">
+    <div class="page-head"><span class="page-head-icon">📝</span><h1>工作总结</h1><span style="flex:1"></span><button class="panel-btn" id="weekReportBtn" title="Agent 读取本周记录自动生成周报">🤖 一键周报</button></div>
+    <div class="panel" id="weekReportBox" hidden style="margin-bottom:14px">
+      <div class="panel-head">📄 本周工作周报 <span class="hint-text" id="weekReportHint"></span><span style="flex:1"></span><button class="panel-btn" id="weekReportCopy" hidden>📋 复制</button></div>
+      <div class="panel-body"><div id="weekReportContent" class="md-body" style="line-height:1.8;font-size:13.5px"></div></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="panel-btn" id="sumCsvBtn" title="导出 CSV（Excel 可打开）">⬇️ 导出 CSV</button></div>
+    <div class="stat-row">
+      <div class="stat-card"><span class="stat-icon">⏱️</span><div><div class="stat-num" id="sumWeek">0</div><div class="stat-label">本周工作(h)</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🗓️</span><div><div class="stat-num" id="sumMonth">0</div><div class="stat-label">本月工作(h)</div></div></div>
+      <div class="stat-card"><span class="stat-icon">📆</span><div><div class="stat-num" id="sumDays">0</div><div class="stat-label">累计记录(天)</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🔥</span><div><div class="stat-num" id="sumStreak">0</div><div class="stat-label">连续工作(天)</div></div></div>
+    </div>
+    <div class="home-grid">
+      <div class="col-left">
+        <div class="panel" style="flex:1">
+          <div class="panel-head">
+            <div class="tab-switch">
+              <button class="tab-btn active" id="tabRecord">📋 工作记录</button>
+              <button class="tab-btn" id="tabReview">🔄 工作复盘</button>
+            </div>
+            <span style="flex:1"></span>
+            <span class="hint-text" id="sumCount"></span>
+          </div>
+          <div class="panel-body">
+            <!-- 记录区 -->
+            <div id="recPane">
+              <div class="form-row">
+                <input type="date" id="sumDate">
+                <input type="number" id="sumHours" placeholder="时长(小时)" min="0" step="0.5">
+              </div>
+              <div class="tag-picker" id="sumTagPicker">
+                <button class="tag-chip" data-tag="读文献">📖 读文献</button>
+                <button class="tag-chip" data-tag="查资料">🔎 查资料</button>
+                <button class="tag-chip" data-tag="做实验">🧪 做实验</button>
+                <button class="tag-chip" data-tag="写文章">✍️ 写文章</button>
+                <button class="tag-chip" data-tag="干杂活">🧹 干杂活</button>
+                <button class="tag-chip custom" data-tag="__custom__">✨ 自定义</button>
+                <input id="sumCustomTag" list="customTagList" placeholder="输入自定义标签…" hidden>
+                <datalist id="customTagList"></datalist>
+              </div>
+              <textarea id="sumContent" placeholder="今天做了什么、有什么进展、收获…"></textarea>
+              <div class="note-row">
+                <button class="primary-btn" id="sumAddBtn">添加记录</button>
+                <span class="note-hint" id="sumEditHint" hidden>正在编辑该条，改完点「保存修改」</span>
+              </div>
+              <div class="list-block" id="sumList"></div>
+            </div>
+            <!-- 复盘区 -->
+            <div id="revPane" hidden>
+              <div class="form-row">
+                <input type="date" id="revDate">
+                <span class="note-hint">只记日期和内容，用于定期回头审视</span>
+              </div>
+              <textarea id="revContent" placeholder="做得好的地方 / 有哪些不足 / 下一步怎么改进…"></textarea>
+              <div class="note-row">
+                <button class="primary-btn" id="revAddBtn">保存复盘</button>
+                <span class="note-hint" id="revEditHint" hidden>正在编辑该条，改完点「保存修改」</span>
+              </div>
+              <div class="list-block" id="revList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="panel">
+          <div class="panel-head">📊 本周时长</div>
+          <div class="panel-body">
+            <div class="bar-chart compact" id="barChart2"></div>
+            <div class="bar-total" id="barTotal2">本周合计 0 小时</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">🏷️ 工作方向分布 <span class="hint-text">按标签统计</span></div>
+          <div class="panel-body" id="tagDist">
+            <div class="mini-empty">暂无标签数据<br><span class="mini-hint">记录工作时选标签，这里会统计</span></div>
+          </div>
+        </div>
+        <div class="panel" style="flex:1">
+          <div class="panel-head">🗓️ 本月工作热力 <span class="hint-text">越蓝投入越多</span></div>
+          <div class="panel-body"><div class="heatmap" id="heatmap"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 工作日历 ===== -->
+  <section id="calendar" class="page">
+    <div class="page-head"><span class="page-head-icon">📅</span><h1>工作日历</h1><span style="flex:1"></span><button class="panel-btn" id="remindBtn" title="日程开始前 30 分钟提醒">🔔 开启日程提醒</button></div>
+    <div class="cal-grid">
+      <div class="panel cal-panel">
+        <div class="panel-head">
+          <button class="cal-nav" id="calPrevYear" title="上一年">◀◀</button>
+          <button class="cal-nav" id="calPrev" title="上一月">◀</button>
+          <span class="cal-title" id="calTitle" title="点击快速切换年月">2026年8月</span>
+          <button class="cal-nav" id="calNext" title="下一月">▶</button>
+          <button class="cal-nav" id="calNextYear" title="下一年">▶▶</button>
+          <button class="panel-btn" id="calToday">今天</button>
+          <input type="month" id="calMonthPicker" hidden>
+        </div>
+        <div class="cal-week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+        <div class="cal-days" id="calDays"></div>
+      </div>
+      <div class="cal-side">
+        <div class="panel" style="flex:1">
+          <div class="panel-head">📌 <span id="calSelDate">8月4日</span></div>
+          <div class="panel-body">
+            <div class="event-list" id="dayEvents"></div>
+            <div class="side-sep">＋ 添加日程</div>
+            <div class="form-row">
+              <input type="time" id="evTime">
+              <input type="text" id="evTitle" placeholder="日程标题" maxlength="30">
+            </div>
+            <div class="form-row">
+              <select id="evType">
+                <option>组会</option><option>文献阅读</option><option>写作</option>
+                <option>实验/数据</option><option>投稿截止</option><option>其他</option>
+              </select>
+              <button class="primary-btn" id="evAddBtn">添加</button>
+            </div>
+            <div class="panel" style="margin-top:14px;flex-shrink:0">
+              <div class="panel-head">📅 截稿 / 会议日历</div>
+              <div class="panel-body" style="gap:6px">
+                <div id="dlList" style="display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto"></div>
+                <div class="side-sep">＋ 添加截稿</div>
+                <div class="form-row"><input type="date" id="dlDate"><input type="text" id="dlTitle" placeholder="事项（截稿/会议/申请）" maxlength="40"></div>
+                <div class="form-row"><select id="dlType"><option>投稿截止</option><option>会议</option><option>申请</option><option>其他</option></select><button class="primary-btn" id="dlAddBtn" style="flex:1">添加</button></div>
+              </div>
+            </div>
+            <div class="side-sep">📖 工作日记</div>
+            <textarea id="dayJournal" placeholder="记录这一天…"></textarea>
+            <div class="note-row"><button class="primary-btn" id="journalSaveBtn">保存日记</button><span class="note-hint">已保存到该日期</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 文献雷达 ===== -->
+  <section id="radar" class="page">
+    <div class="page-head"><span class="page-head-icon">📡</span><h1>文献雷达</h1></div>
+    <div class="panel">
+      <div class="panel-head">⚙️ 雷达设置 <button class="panel-btn" id="radarAddRec">＋ 添加推荐</button></div>
+      <div class="radar-set">
+        <div class="set-label">关注期刊</div>
+        <div class="journal-chips" id="journalChips"></div>
+        <div class="form-row">
+          <input id="journalInput" placeholder="添加期刊，如：American Economic Review" maxlength="40">
+          <button class="primary-btn" id="journalAddBtn">＋ 添加</button>
+        </div>
+        <div class="set-label" style="margin-top:12px">关键词</div>
+        <div class="form-row">
+          <input id="keywordInput" placeholder="international trade, globalization, FDI…">
+          <button class="primary-btn" id="keywordBtn">更新关键词</button>
+        </div>
+        <div class="set-label" style="margin-top:12px">👤 关注学者 <span class="hint-text">期刊搜完后自动查他们发在别处的论文</span></div>
+        <div class="journal-chips" id="scholarChips"></div>
+        <div class="form-row">
+          <input id="scholarInput" placeholder="添加学者，如：Robert C. Feenstra" maxlength="40">
+          <button class="primary-btn" id="scholarAddBtn">＋ 添加</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="flex:1">
+      <div class="panel-head">📌 今日推荐 <span class="hint-text" id="radarDate"></span>
+        <span style="flex:1"></span>
+        <button class="panel-btn" id="radarShuffle">换一批 🔄</button>
+        <button class="primary-btn" id="radarFetchBtn">🔄 获取今日推荐</button>
+      </div>
+      <div class="rec-grid" id="recGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== 我的文献库 ===== -->
+  <section id="library" class="page">
+    <div class="page-head">
+      <span class="page-head-icon">📚</span><h1>我的文献库</h1>
+      <span style="flex:1"></span>
+      <button class="panel-btn head-btn" id="libExportBtn">导出 BibTeX</button>
+      <button class="panel-btn head-btn" id="libCsvBtn" title="导出 CSV（Excel 可打开）">⬇️ CSV</button>
+      <button class="panel-btn head-btn" id="libImportBtn">📥 导入 Zotero</button>
+      <button class="panel-btn head-btn danger-btn" id="libClearBtn">🗑️ 清空</button>
+      <button class="primary-btn" id="libAddBtn">＋ 添加文献</button>
+    </div>
+    <div class="panel" style="flex:1">
+      <div class="toolbar">
+        <input id="libSearch" placeholder="🔍 搜索标题 / 作者 / 期刊…">
+        <select id="libCatFilter">
+          <option value="">全部分类</option><option value="__none__">未分类</option>
+        </select>
+        <select id="libStatusFilter">
+          <option value="">全部状态</option><option>未读</option><option>在读</option><option>已读</option><option>精读</option>
+        </select>
+        <select id="libTagFilter"><option value="">全部标签</option></select>
+        <button class="panel-btn" id="libCatMgrBtn" title="管理分类">🏷️</button>
+        <span class="hint-text" id="libCount"></span>
+      </div>
+      <div class="lib-list" id="libList"></div>
+    </div>
+  </section>
+
+  <!-- ===== 文献分析 ===== -->
+  <section id="analysis" class="page">
+    <div class="page-head"><span class="page-head-icon">🔬</span><h1>文献分析</h1></div>
+    <div class="panel">
+      <div class="panel-head">🧠 智能分析</div>
+      <div class="panel-body">
+        <div class="api-warn" id="analysisWarn" hidden>⚠️ 桥服务未开启：请先点击桌面「开启工作台桥」图标，才能使用 Agent 分析</div>
+        <textarea id="analysisInput" placeholder="补充你的分析要求（可选）…例如：帮我梳理这篇论文的创新点和实验方法"></textarea>
+        <div class="note-row">
+          <input type="file" id="analysisFile" accept=".pdf,.txt,.md,.docx" hidden>
+          <button class="panel-btn" id="analysisFileBtn">📎 上传文献</button>
+          <span class="file-chip" id="analysisFileName" hidden></span>
+          <button class="primary-btn" id="analysisBtn">🤖 Agent 智能分析</button>
+        </div>
+        <div class="loading-box" id="analysisLoading" hidden>⏳ 🤖 Hermes Agent 分析中，请稍候（约 20~60 秒）…</div>
+      </div>
+    </div>
+    <div class="home-grid" style="flex:1">
+      <div class="col-left">
+        <div class="panel" style="flex:1">
+          <div class="panel-head">📄 分析结果</div>
+          <div class="panel-body result-body" id="analysisResult">
+            <div class="mini-empty">分析结果将显示在这里</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="panel" style="flex:1">
+          <div class="panel-head">🕘 分析历史</div>
+          <div class="panel-body" id="analysisHistory"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 投稿管理 ===== -->
+  <section id="submission" class="page">
+    <div class="page-head">
+      <span class="page-head-icon">✉️</span><h1>投稿管理</h1>
+      <span style="flex:1"></span>
+      <button class="primary-btn" id="subAddBtn">＋ 新增投稿</button>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><span class="stat-icon">🔄</span><div><div class="stat-num" id="subStatActive">0</div><div class="stat-label">进行中</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🔍</span><div><div class="stat-num" id="subStatReview">0</div><div class="stat-label">审稿中</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🎉</span><div><div class="stat-num" id="subStatAccept">0</div><div class="stat-label">已录用</div></div></div>
+      <div class="stat-card"><span class="stat-icon">📉</span><div><div class="stat-num" id="subStatReject">0</div><div class="stat-label">已拒稿</div></div></div>
+    </div>
+    <div class="panel" style="flex:1">
+      <div class="panel-head">📮 投稿列表 <span class="hint-text" id="subCount"></span></div>
+      <div class="sub-list" id="subList"></div>
+    </div>
+  </section>
+
+  <!-- ===== 文章管理 ===== -->
+  <section id="articles" class="page">
+    <div class="page-head">
+      <span class="page-head-icon">🗂️</span>
+      <h1>文章管理</h1>
+      <span style="width:14px"></span>
+      <div class="tab-switch" id="artCatTabs">
+        <button class="tab-btn active" data-cat="小论文">📄 小论文</button>
+        <button class="tab-btn" data-cat="大论文">📖 大论文</button>
+        <button class="tab-btn" data-cat="综述">🔍 综述</button>
+        <button class="tab-btn" data-cat="项目">📁 项目</button>
+      </div>
+      <span style="flex:1"></span>
+      <button class="panel-btn" id="artWriteBtn" title="Agent 写作助手：大纲/润色/投稿信">✍️ AI 写作</button>
+      <button class="panel-btn" id="artProgressBtn" title="论文章节写作进度">📄 进度</button>
+      <button class="primary-btn" id="artUploadBtn">📤 上传文件</button>
+    </div>
+    <div class="art-grid">
+      <div class="panel art-tree-panel">
+        <div class="panel-head">📚 部分列表 <span class="hint-text">名字可改 · 点「＋ 添加部分」</span></div>
+        <div class="panel-body art-tree" id="artTree"></div>
+      </div>
+      <div class="panel art-editor-panel">
+        <div class="panel-head" id="artEditorHead">👆 选中左侧一个「部分」来管理文件</div>
+        <div class="panel-body">
+          <div id="artFilesPane" hidden>
+            <div class="file-drop" id="fileDrop">
+              🗂️ 把文件拖到这里，或点右上角「📤 上传文件」
+              <br><span class="mini-hint">支持文档 / 图片 / 压缩包等任意文件 · 同一部分传多个文件 = 多个版本</span>
+            </div>
+            <div class="file-list" id="fileList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 英语学习 ===== -->
+  <section id="english" class="page">
+    <div class="page-head"><span class="page-head-icon">🌐</span><h1>英语学习</h1><span style="flex:1"></span><button class="panel-btn" id="quizBtn" title="随机 10 词自测，错题进错题本">📝 听写测验</button></div>
+    <div class="eng-top">
+      <div class="eng-badge">🔥 连续打卡 <b id="engStreak">0</b> 天</div>
+      <span style="flex:1"></span>
+      <button class="panel-btn" id="engGenBtn">🎲 生成今日单词</button>
+      <button class="primary-btn" id="engCheckBtn">✅ 今日打卡</button>
+    </div>
+    <div class="book-bar">
+      <span class="book-label">📚 词库 <span class="hint-text" id="bookHint"></span></span>
+      <div class="tab-switch" id="bookChips"></div>
+      <span style="flex:1"></span>
+      <button class="panel-btn" id="engRevBtn">📖 复习</button>
+      <button class="panel-btn" id="bookAddBtn">➕ 添加单词</button>
+      <button class="primary-btn" id="bookGenBtn">🤖 生成光计算词库</button>
+    </div>
+    <div class="home-grid" style="flex:1">
+      <div class="col-left">
+        <div class="panel" style="flex:1">
+          <div class="panel-head">📖 今日单词 <span class="hint-text" id="engProgress">0/0 已掌握</span></div>
+          <div class="word-grid" id="wordGrid"></div>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="panel" style="flex:1">
+          <div class="panel-head">💬 学术表达积累</div>
+          <div class="phrase-list" id="phraseList"></div>
+          <div class="form-row">
+            <input id="phraseInput" placeholder="如：per se → 就其本身而言">
+            <button class="primary-btn" id="phraseAddBtn">＋</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 健身记录 ===== -->
+  <section id="fitness" class="page">
+    <div class="page-head"><span class="page-head-icon">💪</span><h1>健身记录</h1><span style="flex:1"></span><button class="panel-btn" id="fitCsvBtn" title="导出 CSV（Excel 可打开）">⬇️ 导出 CSV</button></div>
+    <div class="stat-row">
+      <div class="stat-card"><span class="stat-icon">🏋️</span><div><div class="stat-num" id="fitStatCount">0</div><div class="stat-label">本周训练(次)</div></div></div>
+      <div class="stat-card"><span class="stat-icon">⏱️</span><div><div class="stat-num" id="fitStatMin">0</div><div class="stat-label">本周时长(分钟)</div></div></div>
+      <div class="stat-card"><span class="stat-icon">📊</span><div><div class="stat-num" id="fitStatTotal">0</div><div class="stat-label">累计训练(次)</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🔥</span><div><div class="stat-num" id="fitStatStreak">0</div><div class="stat-label">连续运动(天)</div></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">➕ 添加训练</div>
+      <div class="form-row">
+        <select id="fitType">
+          <option>跑步</option><option>力量</option><option>有氧</option><option>球类</option><option>骑行</option><option>其他</option>
+        </select>
+        <input type="number" id="fitDuration" placeholder="时长(分钟)" min="1">
+        <input type="number" id="fitDistance" placeholder="距离(km，可选)" min="0" step="0.1">
+        <input type="date" id="fitDate">
+        <button class="primary-btn" id="fitAddBtn">记录</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">🏷️ 运动类型分布</div>
+      <div class="fit-dist" id="fitDist"><div class="mini-empty">暂无数据</div></div>
+    </div>
+    <div class="panel" style="flex:1">
+      <div class="panel-head">📋 训练记录 <span class="hint-text" id="fitCount"></span></div>
+      <div class="fit-list" id="fitList"></div>
+    </div>
+  </section>
+
+  <!-- ===== 网站索引 ===== -->
+  <section id="sites" class="page">
+    <div class="page-head"><span class="page-head-icon">🔗</span><h1>网站索引</h1></div>
+    <div class="panel sites-wrap" style="flex:1">
+      <div class="panel-head">常用网站 <span class="hint-text">点击卡片新窗口打开 · 悬停 ✕ 删除</span></div>
+      <div class="site-grid" id="siteGrid"></div>
+      <div class="site-add">
+        <input id="siteName" placeholder="网站名称，如：arXiv" maxlength="20">
+        <input id="siteUrl" placeholder="网址，如：https://arxiv.org">
+        <button id="siteAddBtn">＋ 添加</button>
+      </div>
+      <div class="site-tip">自定义网站保存在本机浏览器中</div>
+    </div>
+    <div class="panel" style="margin-top:14px;flex-shrink:0">
+      <div class="panel-head">📁 文件收藏 <span class="hint-text">常用文件/文件夹路径</span></div>
+      <div class="panel-body">
+        <div id="fileFavList" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input id="fileName" placeholder="名称，如：仿真代码目录" style="flex:1;max-width:200px">
+          <input id="filePath" placeholder="路径，如：E:\codes\mzi" style="flex:2">
+          <button class="primary-btn" id="fileAddBtn">＋ 收藏</button>
+        </div>
+        <div class="site-tip" style="margin-top:8px">收藏的路径可一键复制（配合文献库「从本地文件导入」使用）</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== API 管理（密钥 + 用量额度中心） ===== -->
+  <!-- ===== 任务清单 ===== -->
+  <section id="task" class="page">
+    <div class="page-head"><span class="page-head-icon">✅</span><h1>任务清单</h1><span style="flex:1"></span><button class="primary-btn" id="taskAddBtn">＋ 新建任务</button></div>
+    <div class="stat-row" style="margin-bottom:14px">
+      <div class="stat-card"><span class="stat-icon">📋</span><div><div class="stat-num" id="taskTotal">0</div><div class="stat-label">全部任务</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🕐</span><div><div class="stat-num" id="taskOpen">0</div><div class="stat-label">未完成</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🔥</span><div><div class="stat-num" id="taskDue">0</div><div class="stat-label">临近截止</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🎯</span><div><div class="stat-num" id="taskDone">0</div><div class="stat-label">已完成</div></div></div>
+    </div>
+    <div class="filter-row" style="display:flex;gap:8px;margin-bottom:12px">
+      <select id="taskFilter" class="select-inline"><option value="">全部状态</option><option>待办</option><option>进行中</option><option>已完成</option></select>
+      <select id="taskPrioFilter" class="select-inline"><option value="">全部优先级</option><option>高</option><option>中</option><option>低</option></select>
+      <span style="flex:1"></span>
+      <button class="panel-btn" id="taskCsvBtn">⬇️ 导出 CSV</button>
+    </div>
+    <div id="taskList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="panel" id="goalPanel" style="margin-top:18px;flex-shrink:0">
+      <div class="panel-head">🎯 目标管理 <button class="panel-btn" id="goalAddBtn">＋ 新目标</button></div>
+      <div class="panel-body" id="goalList" style="gap:12px"></div>
+    </div>
+  </section>
+
+  <!-- ===== 研究笔记 ===== -->
+  <section id="notes" class="page">
+    <div class="page-head"><span class="page-head-icon">📝</span><h1>研究笔记</h1><span style="flex:1"></span><button class="primary-btn" id="noteAddBtn">＋ 新笔记</button></div>
+    <div class="filter-row" style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="noteSearch" class="agent-input" placeholder="搜索笔记…" style="max-width:260px">
+      <span style="flex:1"></span>
+      <button class="panel-btn" id="noteCsvBtn">⬇️ 导出 CSV</button>
+    </div>
+    <div id="noteList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
+  </section>
+
+  <section id="api" class="page">
+    <div class="page-head"><span class="page-head-icon">🔑</span><h1>API 管理</h1></div>
+    <div class="stat-row">
+      <div class="stat-card"><span class="stat-icon">🔐</span><div><div class="stat-num" id="apiStatCount">0</div><div class="stat-label">已配置密钥</div></div></div>
+      <div class="stat-card"><span class="stat-icon"><img class="brand-ico" src="https://opencode.ai/favicon.svg" alt="" onerror="this.outerHTML='🚀'"></span><div><div class="stat-num" id="apiStatOC">—</div><div class="stat-label">opencode 周用量</div></div></div>
+      <div class="stat-card"><span class="stat-icon"><img class="brand-ico" src="https://fe-static.deepseek.com/platform/favicon.svg" alt="" onerror="this.outerHTML='🧠'"></span><div><div class="stat-num" id="apiStatDS">—</div><div class="stat-label">DeepSeek 余额</div></div></div>
+      <div class="stat-card"><span class="stat-icon"><img class="brand-ico" src="assets/tokenrhythm.svg" alt="" onerror="this.outerHTML='💠'"></span><div><div class="stat-num" id="apiStatJY">—</div><div class="stat-label">基元律动余额</div></div></div>
+      <div class="stat-card"><span class="stat-icon">🌐</span><div><div class="stat-num" id="apiStatGY">—</div><div class="stat-label">公益站</div></div></div>
+      <div class="stat-card"><span class="stat-icon">💰</span><div><div class="stat-num" id="apiStatFY">—</div><div class="stat-label">付费站</div></div></div>
+      <div class="stat-card"><span class="stat-icon"><img class="brand-ico" src="assets/supxin.png" alt="" onerror="this.outerHTML='🎁'"></span><div><div class="stat-num" id="apiStatSX">—</div><div class="stat-label">肖恩AI 额度</div></div></div>
+      <div class="stat-card"><span class="stat-icon"><img class="brand-ico" src="assets/sensenova.png" alt="" onerror="this.outerHTML='🌌'"></span><div><div class="stat-num" id="apiStatSN">—</div><div class="stat-label">SenseNova 剩余</div></div></div>
+      <div class="stat-card"><span class="stat-icon">📡</span><div><div class="stat-num" id="apiStatSync">—</div><div class="stat-label">官网同步</div></div></div>
+    </div>
+    <div class="tab-switch api-tabs">
+      <button class="tab-btn active" id="apiTabOcBtn"><img class="brand-ico" src="https://opencode.ai/favicon.svg" alt="" onerror="this.outerHTML='🚀'">opencode</button>
+      <button class="tab-btn" id="apiTabDsBtn"><img class="brand-ico" src="https://fe-static.deepseek.com/platform/favicon.svg" alt="" onerror="this.outerHTML='🧠'">DeepSeek</button>
+      <button class="tab-btn" id="apiTabJyBtn"><img class="brand-ico" src="assets/tokenrhythm.svg" alt="" onerror="this.outerHTML='💠'">基元律动</button>
+      <button class="tab-btn" id="apiTabArBtn">🌐 公益站</button>
+      <button class="tab-btn" id="apiTabFyBtn">💰 付费站</button>
+      <button class="tab-btn" id="apiTabSxBtn"><img class="brand-ico" src="assets/supxin.png" alt="" onerror="this.outerHTML='🎁'">肖恩AI</button>
+      <button class="tab-btn" id="apiTabSnBtn"><img class="brand-ico" src="assets/sensenova.png" alt="" onerror="this.outerHTML='🌌'">SenseNova</button>
+      <button class="tab-btn" id="apiTabZotBtn">🔗 Zotero</button>
+    </div>
+    <!-- ===== opencode 页 ===== -->
+    <div class="api-tab-panel" id="apiTabOc">
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">📡 opencode 官网用量 <span class="hint-text" id="ocSyncHint"></span>
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="ocRefreshBtn">🔄 刷新</button>
+          <button class="panel-btn" id="ocCookieBtn">🔑 更新官网登录</button>
+        </div>
+        <div class="oc-usage" id="ocUsage">
+          <div class="mini-empty">正在检测桥服务…</div>
+        </div>
+      </div>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">🔐 opencode 密钥
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="ocImportBtn">＋ 导入密钥配置</button>
+        </div>
+        <div class="api-list" id="apiList"></div>
+        <div class="site-tip">💡 密钥仅存本机；用量数据来自 opencode 官网，无需手动记录。</div>
+      </div>
+    </div>
+    <!-- ===== 公益站 页（入口 + 密钥管理，不做额度监控） ===== -->
+    <div class="api-tab-panel" id="apiTabAr" hidden>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">🌐 公益站 · 中转入口管理
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="gyAddBtn">＋ 添加站点</button>
+        </div>
+        <div class="oc-usage" id="gySites">
+          <div class="mini-empty">加载中…</div>
+        </div>
+      </div>
+      <div class="site-tip">💡 公益站只做「入口 + 密钥管理」，不查询额度；需要额度监控的中转站请用独立标签页（如肖恩AI、SenseNova）。密钥仅存本机浏览器。</div>
+    </div>
+    <!-- ===== 付费站 页（入口 + 密钥管理，不做额度监控） ===== -->
+    <div class="api-tab-panel" id="apiTabFy" hidden>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">💰 付费站 · 中转入口管理
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="fyAddBtn">＋ 添加站点</button>
+        </div>
+        <div class="oc-usage" id="fySites">
+          <div class="mini-empty">加载中…</div>
+        </div>
+      </div>
+      <div class="site-tip">💡 付费站只做「入口 + 密钥管理」；余额查询请在对应官网控制台进行。密钥仅存本机浏览器。</div>
+    </div>
+    <!-- ===== 肖恩AI 页 ===== -->
+    <div class="api-tab-panel" id="apiTabSx" hidden>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">🎁 肖恩AI（supxh）额度 <span class="hint-text" id="sxSyncHint"></span>
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="sxRefreshBtn">🔄 刷新</button>
+          <button class="panel-btn" id="sxCookieBtn">🔑 更新登录</button>
+        </div>
+        <div class="oc-usage" id="sxUsage">
+          <div class="mini-empty">正在检测桥服务…</div>
+        </div>
+      </div>
+      <div class="site-tip">💡 登录 Cookie 仅存本机；数据来自 free.supxh.xin 官网（额度 / 永久额度 / 每日额度 / 邀请进度）。</div>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">🔑 密钥记录
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="sxKeyRecordBtn">📋 记录当前 API Key</button>
+          <button class="panel-btn" onclick="openKeyNoteModal('sx')">＋ 添加密钥</button>
+        </div>
+        <div class="api-list" id="sxKeyList"><div class="mini-empty">暂无记录</div></div>
+        <div class="site-tip">💡 肖恩AI 的 API Key 会随额度数据自动拉取（apiKey 字段）；点「📋 记录当前 API Key」一键存入。</div>
+      </div>
+    </div>
+    <!-- ===== SenseNova 页 ===== -->
+    <div class="api-tab-panel" id="apiTabSn" hidden>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">🌌 SenseNova Token Plan 用量 <span class="hint-text" id="snSyncHint"></span>
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="snRefreshBtn">🔄 刷新</button>
+          <button class="panel-btn" id="snLoginBtn">🔑 更新登录</button>
+        </div>
+        <div class="oc-usage" id="snUsage">
+          <div class="mini-empty">正在检测桥服务…</div>
+        </div>
+      </div>
+      <div class="site-tip">💡 登录 Token 从 platform.sensenova.cn 控制台 F12 → Network → 任意 /lite/console/ 请求 → Authorization 的 Bearer 值粘贴到「🔑 更新登录」；Token 约 24 小时过期。</div>
+    </div>
+    <!-- ===== Zotero 页 ===== -->
+    <div class="api-tab-panel" id="apiTabZot" hidden>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">🔗 Zotero 文献同步 <span class="hint-text" id="zotStatus"></span></div>
+        <div class="panel-body">
+          <div class="zot-card">
+            <div class="zot-row"><span>📚 状态：</span><span id="zotState">检测中…</span></div>
+            <div class="zot-row"><span>🔑 API Key：</span><span id="zotKeyState">检测中…</span></div>
+            <div class="zot-row" id="zotUidRow" hidden><span>👤 账号：</span><span id="zotUid"></span></div>
+            <div class="site-tip">💡 文献库「从本地文件导入」时，若已配置 Key，会自动同步到 Zotero（官方 API 云端，Zotero 同步后出现在桌面端）。文件保存在 papers/ 备档。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ===== DeepSeek 页 ===== -->
+    <div class="api-tab-panel" id="apiTabDs" hidden>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">📡 DeepSeek 官网用量 <span class="hint-text" id="dsSyncHint"></span>
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="dsRefreshBtn">🔄 刷新</button>
+          <button class="panel-btn" id="dsTokenBtn">🔑 更新官网登录</button>
+        </div>
+        <div class="oc-usage" id="dsUsage">
+          <div class="mini-empty">正在检测桥服务…</div>
+        </div>
+      </div>
+      <div class="panel" style="flex:1">
+        <div class="panel-head">🔐 DeepSeek 密钥（可多个）
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="dsImportBtn">＋ 导入密钥配置</button>
+        </div>
+        <div class="api-list" id="dsKeyList"></div>
+        <div class="site-tip">💡 支持多个 DeepSeek 密钥（如多个账号/渠道）。完整 Key 需在官网创建时复制后手动粘贴（官网列表只显示掩码）。</div>
+      </div>
+    </div>
+    <!-- ===== 基元律动页 ===== -->
+    <div class="api-tab-panel" id="apiTabJy" hidden>
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head">📡 基元律动官网余额 <span class="hint-text" id="jySyncHint"></span>
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="jyRefreshBtn">🔄 刷新</button>
+          <button class="panel-btn" id="jyCookieBtn">🔑 更新官网登录</button>
+        </div>
+        <div class="oc-usage" id="jyUsage">
+          <div class="mini-empty">正在检测桥服务…</div>
+        </div>
+      </div>
+      <div class="panel" style="flex:1">
+        <div class="panel-head">💠 基元律动密钥（可多个）
+          <span style="flex:1"></span>
+          <button class="panel-btn" id="jyImportBtn">＋ 导入密钥配置</button>
+        </div>
+        <div class="api-list" id="jyKeyList"></div>
+        <div class="site-tip">💡 支持多个基元律动密钥。导入时填基元律动的 Base URL（OpenAI 兼容接口）和 Key；模型名按平台提供填写。</div>
+      </div>
+    </div>
+</section>
+
+    <!-- Agent 助手 -->
+  <section class="page" id="agent">
+    <div class="page-head"><span class="page-head-icon">🤖</span><h1>Agent 助手</h1>
+      <span class="agent-status off" id="agentStatus"><span class="as-dot"></span><span class="as-text">桥未连接</span></span>
+      <span style="flex:1"></span>
+      <button class="panel-btn" id="agentClear" title="清空对话">🗑️ 清空</button>
+    </div>
+    <div class="agent-wrap">
+      <div class="agent-body">
+        <div class="agent-convs">
+          <button class="conv-new" id="convNewBtn">＋ 新建对话</button>
+          <div class="conv-list" id="convList"></div>
+          <div class="conv-tip">每个对话独立上下文，像 Hermes 里的不同会话</div>
+        </div>
+        <div class="agent-main">
+          <div class="agent-chat" id="agentChat"></div>
+          <div class="agent-input-row">
+            <input id="agentInput" class="agent-input" placeholder="问点什么…（Enter 发送）" maxlength="2000">
+            <button class="primary-btn" id="agentSend">发送</button>
+          </div>
+          <div class="mini-hint" id="agentHint" style="display:none"><span class="typing-dots"><i></i><i></i><i></i></span> Agent 正在思考…（可能需要 10~60 秒，请勿重复发送）</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= 通用弹层 ================= -->
+<div class="modal-mask" id="recModal">
+  <div class="modal modal-lg">
+    <div class="modal-head"><span>📌 添加今日推荐</span><button class="modal-close" data-close="recModal">✕</button></div>
+    <div class="form-row"><input id="recJournal" placeholder="期刊名，如：JDE"><input id="recTitle" placeholder="论文标题" maxlength="80"></div>
+    <div class="form-row"><input id="recAuthors" placeholder="作者，如：Banerjee, A."><input id="recYear" placeholder="年份" maxlength="4"></div>
+    <textarea id="recAbstract" placeholder="摘要…"></textarea>
+    <div class="note-row"><button class="primary-btn" id="recSaveBtn">保存推荐</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="libModal">
+  <div class="modal modal-lg">
+    <div class="modal-head"><span>📚 添加 / 编辑文献</span><button class="modal-close" data-close="libModal">✕</button></div>
+    <div class="lib-import-row">
+      <input id="libFilePath" placeholder="📄 从本地文件导入：粘贴文件路径（如 E:\papers\xxx.pdf），Agent 自动提取信息入库">
+      <button class="panel-btn" id="libFileGo">🤖 提取并入库</button>
+      <span class="file-chip" id="libFileMsg" hidden></span>
+    </div>
+    <div class="form-row"><input id="libTitle" placeholder="标题 *"><input id="libAuthors" placeholder="作者，逗号分隔"></div>
+    <div class="form-row"><input id="libJournal" placeholder="期刊 / 会议"><input id="libYear" placeholder="年份" maxlength="4"><input id="libDoi" placeholder="DOI / 链接"></div>
+    <div class="form-row">
+      <select id="libCat"><option value="">未分类</option></select>
+      <input id="libTags" list="libTagPresets" placeholder="标签，逗号分隔，如：微环,MZI">
+      <datalist id="libTagPresets">
+        <option value="微环"></option><option value="MZI"></option><option value="PCM"></option>
+        <option value="PPIC"></option><option value="铌酸锂"></option><option value="钽酸锂"></option><option value="储备池"></option>
+      </datalist>
+      <select id="libStatus"><option>未读</option><option>在读</option><option>已读</option><option>精读</option></select>
+    </div>
+    <textarea id="libAbstract" placeholder="摘要…"></textarea>
+    <textarea id="libNotes" placeholder="📝 阅读笔记（可选）：读后心得、可借鉴之处…"></textarea>
+    <div class="note-row"><button class="primary-btn" id="libSaveBtn">保存</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="deepModal">
+    <div class="modal modal-lg">
+      <div class="modal-head"><span>📖 文献精读笔记</span><button class="modal-close" data-close="deepModal">✕</button></div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px" id="deepTitle"></div>
+      <textarea id="deepQ" placeholder="❓ 要解决什么问题？" rows="2" style="margin-bottom:6px"></textarea>
+      <textarea id="deepM" placeholder="🔬 用了什么方法/技术？" rows="2" style="margin-bottom:6px"></textarea>
+      <textarea id="deepI" placeholder="💡 创新点是什么？" rows="2" style="margin-bottom:6px"></textarea>
+      <textarea id="deepL" placeholder="⚠️ 局限 / 未解决的问题？" rows="2" style="margin-bottom:6px"></textarea>
+      <textarea id="deepT" placeholder="🤔 对我研究的启发 / 可借鉴之处？" rows="2" style="margin-bottom:8px"></textarea>
+      <div class="note-row"><button class="primary-btn" id="deepSaveBtn">保存精读笔记</button></div>
+    </div>
+  </div>
+  <div class="modal-mask" id="subModal">
+  <div class="modal modal-lg">
+    <div class="modal-head"><span id="subModalTitle">✉️ 新增投稿</span><button class="modal-close" data-close="subModal">✕</button></div>
+    <div class="form-row"><input id="subTitle" placeholder="论文标题 *" maxlength="80"><input id="subJournal" placeholder="目标期刊 *" maxlength="40"></div>
+    <div class="form-row">
+      <select id="subStatus"><option>拟投</option><option>在投</option><option>审稿中</option><option>返修</option><option>已录用</option><option>已拒稿</option><option>已撤稿</option></select>
+      <input id="subIF" placeholder="影响因子(可选)" maxlength="8">
+      <input id="subZone" placeholder="分区，如：光学一区(可选)" maxlength="12">
+    </div>
+    <div class="form-row"><input id="subUrl" placeholder="🔗 投稿链接（投稿后的网页链接，可选）" maxlength="300"></div>
+    <textarea id="subNote" placeholder="备注（选填）…"></textarea>
+    <div class="note-row"><button class="primary-btn" id="subSaveBtn">保存</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="imgModal">
+  <div class="modal img-modal">
+    <div class="modal-head"><span id="imgModalTitle">预览</span><button class="modal-close" data-close="imgModal">✕</button></div>
+    <img id="imgModalBody" alt="预览" style="max-width:100%; border-radius:10px; display:block; margin:0 auto;">
+  </div>
+</div>
+
+<div class="modal-mask" id="partModal">
+  <div class="modal modal-lg">
+    <div class="modal-head"><span id="partModalTitle">＋ 添加部分</span><button class="modal-close" data-close="partModal">✕</button></div>
+    <div class="form-row"><input id="partNameInput" placeholder="部分名字（如：正文 / 摘要 / 图片 / 参考文献）" maxlength="20"></div>
+    <div class="note-row" style="justify-content:flex-end">
+      <button class="panel-btn" data-close="partModal">取消</button>
+      <button class="primary-btn" id="partOkBtn">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="importModal">
+  <div class="modal modal-lg">
+    <div class="modal-head"><span>📥 导入 Zotero 文献</span><button class="modal-close" data-close="importModal">✕</button></div>
+    <div class="import-body">
+      <div class="form-row">
+        <button class="panel-btn" id="importPickBtn">📁 选择 .bib 文件</button>
+        <input type="file" id="importFile" accept=".bib,.txt" hidden>
+        <span class="note-hint">Zotero 里：全选文献 → 右键导出 → BibTeX</span>
+      </div>
+      <textarea id="importText" placeholder="或者直接把 BibTeX 内容粘贴到这里…" style="min-height:140px"></textarea>
+      <div class="note-row">
+        <button class="primary-btn" id="importRunBtn">开始导入</button>
+        <span class="note-hint" id="importResult"></span>
+      </div>
+      <div class="site-tip">只导入 标题/作者/期刊/年份/DOI，重复标题自动跳过；导入后每条文献可点「📎 Zotero」跳转定位（需 Zotero 桌面端已打开）。</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="catModal">
+  <div class="modal modal-lg">
+    <div class="modal-head"><span>🏷️ 管理分类</span><button class="modal-close" data-close="catModal">✕</button></div>
+    <div class="cat-list" id="catList"></div>
+    <div class="form-row">
+      <input id="catInput" placeholder="新分类名称（如：核心文献）" maxlength="10">
+      <button class="primary-btn" id="catAddBtn">添加</button>
+    </div>
+    <div class="site-tip">分类 = 文献的大类（一篇一个）；标签 = 细粒度关键词（一篇多个）。删除分类不会删文献，只是变为未分类。</div>
+  </div>
+</div>
+
+<div class="modal-mask" id="wordModal">
+  <div class="modal modal-lg">
+    <div class="modal-head"><span>➕ 添加单词到当前词库</span><button class="modal-close" data-close="wordModal">✕</button></div>
+    <div class="form-row"><input id="wWord" placeholder="英文单词 *" maxlength="40"><input id="wIpa" placeholder="音标，如 /ˈfəʊtən/" maxlength="40"></div>
+    <div class="form-row"><input id="wCn" placeholder="中文释义 *" maxlength="30"><input id="wEx" placeholder="例句（可选）" maxlength="120"></div>
+    <div class="note-row"><button class="primary-btn" id="wSaveBtn">添加</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="reviewModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span>📖 复习 <span class="hint-text" id="reviewPos"></span></span><button class="modal-close" data-close="reviewModal">✕</button></div>
+    <div class="review-box">
+      <div class="review-word" id="reviewWord"></div>
+      <div class="review-ipa" id="reviewIpa"></div>
+      <div class="review-cn" id="reviewCn"></div>
+      <div class="review-ex" id="reviewEx"></div>
+    </div>
+    <div class="note-row">
+      <button class="primary-btn" id="reviewRevealBtn">👁️ 显示释义</button>
+      <button class="primary-btn" id="reviewOkBtn" style="display:none">✅ 记住了</button>
+      <button class="panel-btn" id="reviewAgainBtn" style="display:none">🔄 再记一次</button>
+    </div>
+    <div class="site-tip">按回车：先显示释义，再标记结果。「再记一次」会把它从已掌握中移回未学。</div>
+  </div>
+</div>
+
+<div class="modal-mask" id="backupModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span>💾 数据备份与恢复</span><button class="modal-close" data-close="backupModal">✕</button></div>
+    <div class="modal-body">
+      <p class="mini-hint">工作台数据保存在浏览器本地（localStorage）。建议定期导出备份，防止误删或浏览器清理。</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
+        <button class="primary-btn" id="backupExport">📤 导出全部数据（下载 JSON）</button>
+        <button class="panel-btn" id="backupImport">📥 从备份恢复（选择 JSON 文件）</button>
+      </div>
+      <div class="mini-hint" id="backupInfo"></div>
+    </div>
+  </div>
+</div>
+<input type="file" id="backupFileInput" accept=".json,application/json" hidden>
+<div class="modal-mask" id="commandModal">
+    <div class="modal-card search-modal" style="width:460px">
+      <div class="modal-head"><span>/ 命令面板</span><button class="modal-close" data-close="commandModal">✕</button></div>
+      <div class="modal-body" style="padding:10px">
+        <input id="cmdInput" class="search-input" placeholder="输入页面名或命令…" autocomplete="off">
+        <div id="cmdList" class="search-results" style="max-height:330px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" id="writeModal">
+    <div class="modal-card modal-lg">
+      <div class="modal-head"><span>✍️ AI 写作助手</span><button class="modal-close" data-close="writeModal">✕</button></div>
+      <div class="modal-body" style="padding:12px">
+        <div class="tab-switch" id="writeModeTabs">
+          <button class="tab-btn active" data-wmode="outline">📑 论文大纲</button>
+          <button class="tab-btn" data-wmode="polish">✨ 润色改写</button>
+          <button class="tab-btn" data-wmode="cover">💌 投稿信</button>
+        </div>
+        <textarea id="writeInput" placeholder="📑 大纲：输入论文主题/研究方向…&#10;✨ 润色：粘贴要润色的段落…&#10;💌 投稿信：输入稿件标题、目标期刊…" rows="9" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;outline:none;resize:vertical;margin-top:10px;line-height:1.7;background:var(--bg);color:var(--text)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="primary-btn" id="writeGo" style="flex:1">🚀 生成</button>
+          <button class="panel-btn" id="writeCopy" hidden>📋 复制结果</button>
+        </div>
+        <div class="mini-hint" id="writeHint" style="display:none;margin-top:8px"><span class="typing-dots"><i></i><i></i><i></i></span> Agent 写作中…（10~60 秒）</div>
+        <div id="writeResult" class="md-body" style="margin-top:12px;line-height:1.8;font-size:13.5px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" id="taskModal">
+    <div class="modal">
+      <div class="modal-head"><span id="taskModalTitle">＋ 新建任务</span><button class="modal-close" data-close="taskModal">✕</button></div>
+      <div class="form-row"><input id="taskTitle" placeholder="任务标题 *" maxlength="80"><select id="taskPrio"><option>中</option><option>高</option><option>低</option></select><select id="taskStatus"><option>待办</option><option>进行中</option><option>已完成</option></select></div>
+      <div class="form-row"><input id="taskDue" type="date"><input id="taskTags" placeholder="标签，如：实验,写作" list="taskTagPresets"><datalist id="taskTagPresets"><option value="实验"></option><option value="写作"></option><option value="文献"></option><option value="组会"></option><option value="课程"></option></datalist></div>
+      <textarea id="taskNote" placeholder="备注…"></textarea>
+      <div class="note-row"><button class="primary-btn" id="taskSaveBtn">保存</button></div>
+    </div>
+  </div>
+  <div class="modal-mask" id="goalModal">
+    <div class="modal">
+      <div class="modal-head"><span id="goalModalTitle">🎯 新目标</span><button class="modal-close" data-close="goalModal">✕</button></div>
+      <div class="form-row"><input id="goalTitle" placeholder="目标标题 *（如：完成综述初稿）" maxlength="60"><input id="goalDeadline" type="date"></div>
+      <div class="form-row"><input id="goalPct" type="number" min="0" max="100" placeholder="进度 %（0-100）"><input id="goalNote" placeholder="备注（可选）"></div>
+      <div class="note-row"><button class="primary-btn" id="goalSaveBtn">保存</button></div>
+    </div>
+  </div>
+  <div class="modal-mask" id="noteModal">
+    <div class="modal">
+      <div class="modal-head"><span id="noteModalTitle">📝 新笔记</span><button class="modal-close" data-close="noteModal">✕</button></div>
+      <div class="form-row"><input id="noteTitle" placeholder="笔记标题 *（如：微环谐振条件推导思路）" maxlength="60"><input id="noteTags" placeholder="标签，逗号分隔（实验/文献/灵感）"></div>
+      <textarea id="noteContent" placeholder="记录想法、灵感、推导过程、待查问题…" style="min-height:180px"></textarea>
+      <div class="note-row"><button class="primary-btn" id="notePinBtn" style="margin-right:auto">📌 不置顶</button><button class="primary-btn" id="noteSaveBtn">保存</button></div>
+    </div>
+  </div>
+  <div class="modal-mask" id="progressModal">
+    <div class="modal">
+      <div class="modal-head"><span id="progModalTitle">📄 论文写作进度</span><button class="modal-close" data-close="progressModal">✕</button></div>
+      <div class="form-row"><input id="progTitle" placeholder="论文标题 *（如：基于相变材料的可编程光子处理器）"><select id="progCat"><option>小论文</option><option>大论文</option><option>综述</option></select></div>
+      <div id="progChapters" style="display:flex;flex-direction:column;gap:8px;margin:10px 0"></div>
+      <div class="note-row"><button class="primary-btn" id="progSaveBtn">保存进度</button></div>
+    </div>
+  </div>
+  <div class="modal-mask" id="quizModal">
+    <div class="modal-card modal-lg">
+      <div class="modal-head"><span>📝 听写测验 <span class="hint-text" id="quizInfo"></span></span><button class="modal-close" data-close="quizModal">✕</button></div>
+      <div class="modal-body" style="padding:12px">
+        <div id="quizList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="primary-btn" id="quizSubmit" style="flex:1">✅ 交卷评分</button>
+          <button class="panel-btn" id="quizReset" hidden>🔄 再来一组</button>
+        </div>
+        <div id="quizResult" style="margin-top:12px;font-size:13px;line-height:1.8"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" id="searchModal">
+  <div class="modal search-modal">
+    <div class="modal-head"><span>🔍 全局搜索</span><button class="modal-close" data-close="searchModal">✕</button></div>
+    <div class="modal-body">
+      <input id="searchInput" class="search-input" placeholder="搜索文献、文章、投稿、单词、网站、记录…（Enter 打开第一条）" autocomplete="off">
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="cityModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span>📌 手动指定城市</span><button class="modal-close" data-close="cityModal">✕</button></div>
+    <div class="modal-body">
+      <p class="mini-hint">网页在部分环境（如预览面板沙箱）无法使用 GPS 精确定位，可手动指定常驻城市，设置后天气固定显示该城市。推荐常用：</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        <button class="panel-btn" data-city-preset="大同 · 云州区|40.04|113.61">🏠 大同 · 云州区</button>
+        <button class="panel-btn" data-city-preset="兰州 · 榆中校区|35.94|104.14">🎓 兰州 · 榆中校区</button>
+        <button class="panel-btn" data-city-preset="大同市区|40.076|113.300">🏙️ 大同市区</button>
+      </div>
+      <div class="key-form-row"><label>城市名</label><input id="cityName" placeholder="如：大同 · 云州区" maxlength="20"></div>
+      <div class="key-form-row"><label>纬度</label><input id="cityLat" placeholder="如：40.04"></div>
+      <div class="key-form-row"><label>经度</label><input id="cityLon" placeholder="如：113.61"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="primary-btn" id="citySave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="apiKeyModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span id="apiKeyModalTitle">导入密钥配置</span><button class="modal-close" data-close="apiKeyModal">✕</button></div>
+    <div class="modal-body">
+      <div class="key-form-row"><label>名称</label><input id="kfName" placeholder="如：work1 / 备用账号" maxlength="20"></div>
+      <div class="key-form-row"><label>API Key</label><input id="kfKey" type="password" placeholder="sk-..."></div>
+      <div class="key-form-row"><label>Base URL</label><input id="kfBase" placeholder="https://api.xxx.com/v1（基元律动请填平台提供地址）"></div>
+      <div class="key-form-row"><label>默认模型</label><input id="kfModel" placeholder="可选，如：deepseek-chat"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="primary-btn" id="kfSave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="dsTokenModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span>🔑 更新 DeepSeek 官网登录</span><button class="modal-close" data-close="dsTokenModal">✕</button></div>
+    <div class="modal-body">
+      <p class="mini-hint">在已登录的 platform.deepseek.com 页面：F12 → Network → F5 → 点任意 <b>/api/v0/</b> 接口请求 → Headers → 复制 <b>Authorization: Bearer xxx</b> 里的 xxx 整段（很长）粘贴到下面：</p>
+      <textarea id="dsTokenInput" rows="4" placeholder="粘贴 Bearer Token"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="primary-btn" id="dsTokenSave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="jyCookieModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span>🔑 更新基元律动官网登录</span><button class="modal-close" data-close="jyCookieModal">✕</button></div>
+    <div class="modal-body">
+      <p class="mini-hint">在已登录的 tokenrhythm.studio 页面：F12 → Network → F5 → 点任意 <b>/api/</b> 接口请求 → Headers → Request Headers → 复制整段 <b>Cookie:</b> 后面的内容（很长）粘贴到下面：</p>
+      <textarea id="jyCookieInput" rows="4" placeholder="粘贴 Cookie"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="primary-btn" id="jyCookieSave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="ocCookieModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span>🔑 更新 opencode 官网登录</span><button class="modal-close" data-close="ocCookieModal">✕</button></div>
+    <div class="modal-body">
+      <p class="mini-hint">在已登录的 opencode 官网页面按 F12 → Network → F5 刷新 → 右键任意 opencode.ai 请求 → Copy as cURL (bash)，把里面 <b>-H 'cookie: ...'</b> 的值（oc_locale=zh; auth=...）整段粘贴到下面：</p>
+      <textarea id="ocCookieInput" rows="4" placeholder="oc_locale=zh; auth=Fe26.2**..."></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="primary-btn" id="ocCookieSave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="sxCookieModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span>🎁 更新肖恩AI登录</span><button class="modal-close" data-close="sxCookieModal">✕</button></div>
+    <div class="modal-body">
+      <p class="mini-hint">在已登录的 free.supxh.xin 页面按 F12 → Network → F5 刷新 → 点任意请求 → 复制 Cookie 整段值粘贴到下面：</p>
+      <textarea id="sxCookieInput" rows="4" placeholder="auth_token=...; cf_clearance=..."></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="primary-btn" id="sxCookieSave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="snLoginModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span>🔑 更新 SenseNova 登录</span><button class="modal-close" data-close="snLoginModal">✕</button></div>
+    <div class="modal-body">
+      <p class="mini-hint">platform.sensenova.cn 控制台按 F12 → Network → F5 → 点任意 <b>/lite/console/</b> 请求 → 复制 <b>Authorization 头的 Bearer 值</b>（eyJ...开头整串）粘贴到下面：</p>
+      <textarea id="snJwtInput" rows="4" placeholder="粘贴商汤控制台的 Bearer Token（F12 → Network → /lite/console/ 请求的 Authorization 值）"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="primary-btn" id="snLoginSave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="keyNoteModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span id="knTitle">🔑 密钥记录</span><button class="modal-close" data-close="keyNoteModal">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="knId">
+      <input type="hidden" id="knProvider">
+      <div class="form-row"><label>名称</label><input id="knName" placeholder="如：默认 API / 备用 key"></div>
+      <div class="form-row"><label>密钥</label><input id="knKey" placeholder="sk-..."></div>
+      <div class="form-row"><label>Base URL</label><input id="knBase" placeholder="https://..."></div>
+      <div class="form-row"><label>备注（可选）</label><input id="knNote" placeholder="用途 / 说明"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="primary-btn" id="knSave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="modal-head"><span id="cfTitle">确认</span><button class="modal-close" data-close="confirmModal">✕</button></div>
+    <div class="cf-text" id="cfText"></div>
+    <div class="note-row" style="justify-content:flex-end">
+      <button class="panel-btn" id="cfCancel" data-close="confirmModal">取消</button>
+      <button class="primary-btn danger" id="cfOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" multiple id="artFileInput" hidden>
+
+<script src="app.js?v=20260820"></script>
+</body>
+</html>

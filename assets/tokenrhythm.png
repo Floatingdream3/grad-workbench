@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    
+    
+    <script type="module" crossorigin src="/assets/index-DUPcsDBp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/jsx-runtime-C6tpbvG4.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-dom-CPKW0vjN.js">
+    <link rel="modulepreload" crossorigin href="/assets/chunk-4ZMWKKQ3-CU22y6Az.js">
+    <link rel="modulepreload" crossorigin href="/assets/createLucideIcon-BR_ZwYlH.js">
+    <link rel="modulepreload" crossorigin href="/assets/siteCopy-BjrPrci7.js">
+    <link rel="modulepreload" crossorigin href="/assets/menu-DkTkI4kR.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-j0RSpe_D.css">
+  <title>页面不存在</title><meta name="description" content="请求的页面不存在。" data-app-seo="true" /><meta name="robots" content="noindex,nofollow" data-app-seo="true" /><link rel="canonical" href="https://tokenrhythm.studio/favicon.ico" data-app-seo="true" /><meta property="og:title" content="页面不存在" data-app-seo="true" /><meta property="og:description" content="请求的页面不存在。" data-app-seo="true" /><meta property="og:type" content="website" data-app-seo="true" /><meta property="og:url" content="https://tokenrhythm.studio/favicon.ico" data-app-seo="true" /><meta property="og:image" content="https://tokenrhythm.studio/figma/landing/hero-video-poster.jpg" data-app-seo="true" /><meta property="og:image:width" content="1728" data-app-seo="true" /><meta property="og:image:height" content="1080" data-app-seo="true" /><meta property="og:image:type" content="image/jpeg" data-app-seo="true" /><meta property="og:image:alt" content="页面不存在页面预览" data-app-seo="true" /><meta name="twitter:card" content="summary_large_image" data-app-seo="true" /><meta name="twitter:title" content="页面不存在" data-app-seo="true" /><meta name="twitter:description" content="请求的页面不存在。" data-app-seo="true" /><meta name="twitter:image" content="https://tokenrhythm.studio/figma/landing/hero-video-poster.jpg" data-app-seo="true" /></head>
+  <body>
+    <div id="root" data-ssr="static"><main class="state-card"><h1>页面不存在</h1><p>请求的页面不存在。</p><a href="/">返回首页</a></main></div>
+    <script id="__REACT_QUERY_STATE__" type="application/json"></script>
+    <script src="/runtime-config.js"></script>
+  </body>
+</html>
