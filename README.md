@@ -104,3 +104,7 @@ grad-workbench/
 ## 📄 License
 
 MIT — 自由使用、修改、分发。
+
+## 相关
+
+选 Token Plan / Coding Plan / Agent 订阅时，可用 [PlanLens](https://planlens.cn) 对比官方价格，推送限时福利。
