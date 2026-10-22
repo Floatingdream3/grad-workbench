@@ -6,6 +6,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
+const { loadHermesConfig, validateRunner } = require('./hermes-config');
+const { runAgent } = require('./agent-process');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const OUT_DIR = path.join(DATA_DIR, 'agent_out');
@@ -61,8 +63,6 @@ async function ocRecords() {
 }
 
 // ── Agent 桥（Hermes chat -q 一键提问，全工具+技能；--resume 续会话保上下文）──
-const AGENT_PY = 'E:\\Agent\\hermes\\hermes-agent\\.venv\\Scripts\\python.exe';
-const AGENT_CWD = 'E:\\Agent\\hermes';
 const AGENT_SESSION_FILE = path.join(__dirname, 'data', 'agent_session.json');
 let agentBusy = false;
 function agentSession() {
@@ -71,13 +71,8 @@ function agentSession() {
 function saveAgentSession(id) {
   try { fs.writeFileSync(AGENT_SESSION_FILE, JSON.stringify({ sessionId: id, updatedAt: Date.now() }), 'utf8'); } catch (e) {}
 }
-const AGENT_SCENES = {
-  chat: '你是 读研工作台的 AI 助手（Hermes Agent）。请用中文简洁、务实地回答，不要长篇大论；需要时可以调用工具或技能。\n\n用户消息：',
-  analysis: '你是 读研工作台的文献分析助手（Hermes Agent）。请对以下文献内容做深度分析，输出：研究主题、核心方法、创新点、局限、对你研究的可借鉴之处（方向：你的研究领域）。用中文，条理清晰。\n\n文献内容：',
-  report: '你是科研助手。根据下面的本周工作记录（日期/时长/标签/内容），生成一份简洁周报：**本周概况**（总时长、有效天数）、**主要工作**（按标签归类要点）、**本周成果与亮点**、**下周建议**（1-2 条）。客观简洁，中文输出，可直接粘贴到组会汇报。\n\n本周工作记录：\n',
-  writing: '你是学术写作助手。用户会指定任务：①论文大纲 ②文本润色/改写 ③投稿 cover letter。按用户指令执行，输出规范、可直接使用的完整文本（中文），不要多余解释。\n',
-  import_lit: '你是 读研工作台的文献录入助手（Hermes Agent）。请完整读取用户提供的本地文献文件（PDF/文本，read_file 或 pdf 工具），提取元数据：title(标题)、authors(作者，逗号分隔)、year(年份)、journal(期刊/会议，未知填 Unknown)、doi(可空)、abstract(摘要，截取前 500 字)、url(原文链接，可空)。然后把该文件复制一份到 ./papers/ 目录（文件名保持原样）。最后把元数据写入 JSON 文件 ./data/agent_out/lit_<当前时间戳YYYYMMDD_HHMMSS>.json，结构：{"type":"literature","title":"Agent 文献发现 · <标题>","time":"<当前时间>","payload":[{title,authors,year,journal,doi,abstract,url,file}]}（file 字段=复制后的文件相对路径，如 papers/文件名.pdf；严格 JSON，用 UTF-8 写入）。文件路径：',
-};
+// Prompts live in agent_runner.py, including the import output locations.
+const AGENT_SCENES = new Set(['chat', 'analysis', 'report', 'writing', 'import_lit']);
 
 // Zotero 同步（官方 API；key 存 data/zotero_key.json；本地 23119 仅用于状态检测）
 function zoteroKeyPath() { return path.join(DATA_DIR, 'zotero_key.json'); }
@@ -795,16 +790,21 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && parts[0] === 'agent' && parts[1] === 'chat') {
     let body = '';
     req.on('data', c => { body += c; if (body.length > 2e6) req.destroy(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       let j;
       try { j = JSON.parse(body); } catch (e) { return send(res, 400, { error: 'JSON 解析失败' }); }
+      if (!j || typeof j !== 'object' || Array.isArray(j)) return send(res, 400, { error: '请求必须是 JSON 对象' });
       const text = String(j.text || '').trim();
       if (!text && !j.file) return send(res, 400, { error: '消息为空' });
-      const scene = AGENT_SCENES[j.scene] ? j.scene : 'chat';
+      const scene = AGENT_SCENES.has(j.scene) ? j.scene : 'chat';
       if (agentBusy) return send(res, 429, { error: '上一个 Agent 请求还在处理中，请稍候' });
+      if (j.session != null && typeof j.session !== 'string') return send(res, 400, { error: 'session 必须是字符串或 null' });
+      // Explicit null starts a conversation; omitted session keeps legacy resume behavior.
+      const prev = Object.prototype.hasOwnProperty.call(j, 'session') ? (j.session || null) : agentSession();
+      let config;
+      try { config = loadHermesConfig(); validateRunner(); }
+      catch (e) { return send(res, 500, { error: 'Hermes 配置错误: ' + e.message }); }
       agentBusy = true;
-      const { spawn } = require('child_process');
-      const prev = agentSession();
       // 附加待分析文件（data/uploads/ 下的相对路径 → 绝对路径提示 agent 读取）
       let prompt = text;
       if (j.file) {
@@ -815,35 +815,17 @@ const server = http.createServer((req, res) => {
       }
       // 查询写入临时文件（UTF-8），Python 包装脚本执行（避免 Windows argv 中文编码损坏）
       const qfile = path.join(__dirname, 'data', 'agent_q_' + Date.now() + '.txt');
-      try { fs.writeFileSync(qfile, prompt, 'utf8'); } catch (e) { agentBusy = false; return send(res, 500, { error: '写查询文件失败: ' + e.message }); }
-      const runner = path.join(__dirname, 'agent_runner.py');
-      const args = [runner, qfile, scene];
-      if (prev) args.push(prev);
-      const proc = spawn(AGENT_PY, args, {
-        cwd: AGENT_CWD,
-        env: Object.assign({}, process.env, { HERMES_HOME: AGENT_CWD, PYTHONUNBUFFERED: '1', PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' }),
-        windowsHide: true,
-      });
-      let out = '', err = '';
-      const timer = setTimeout(() => { try { proc.kill(); } catch (e) {} }, 490000);
-      proc.stdout.on('data', d => { out += d; if (out.length > 2e6) proc.kill(); });
-      proc.stderr.on('data', d => { err += d; });
-      proc.on('error', e => {
-        clearTimeout(timer); agentBusy = false;
-        try { fs.unlinkSync(qfile); } catch (e2) {}
-        send(res, 500, { error: '启动 Hermes 失败: ' + e.message });
-      });
-      proc.on('close', code => {
-        clearTimeout(timer); agentBusy = false;
-        try { fs.unlinkSync(qfile); } catch (e2) {}
-        let d = {};
-        try { d = JSON.parse(out.trim() || '{}'); } catch (e) {}
-        if (code !== 0 || d.code !== 0) {
-          return send(res, 500, { error: d.error || ('Hermes 异常退出(' + code + ')') + (err ? ' ' + err.slice(-150) : '') });
-        }
+      try {
+        fs.writeFileSync(qfile, prompt, 'utf8');
+        const d = await runAgent(config, { root: __dirname, queryFile: qfile, scene, session: prev });
         if (d.sessionId) saveAgentSession(d.sessionId);
         send(res, 200, { reply: d.reply || '', sessionId: d.sessionId || prev || null });
-      });
+      } catch (e) {
+        send(res, 500, { error: e.message });
+      } finally {
+        agentBusy = false;
+        try { fs.unlinkSync(qfile); } catch (e) {}
+      }
     });
     return;
   }
@@ -882,6 +864,12 @@ const server = http.createServer((req, res) => {
   send(res, 404, { error: 'not found' });
 });
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log('[bridge] listening on http://127.0.0.1:' + PORT);
-});
+if (require.main === module) {
+  // Missing Hermes config does not disable the bridge's other local functions.
+  try { loadHermesConfig(); validateRunner(); }
+  catch (e) { console.warn('[bridge] Agent 尚不可用: ' + e.message); }
+  server.listen(PORT, '127.0.0.1', () => {
+    console.log('[bridge] listening on http://127.0.0.1:' + PORT);
+  });
+}
+module.exports = server;

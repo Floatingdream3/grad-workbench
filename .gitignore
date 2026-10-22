@@ -2,6 +2,7 @@
 data/
 *.log
 papers/
+hermes.local.json
 
 # 依赖
 node_modules/
