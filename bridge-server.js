@@ -1,6 +1,6 @@
 // ============ 工作台 · Agent 桥服务 ============
 // 网页(localStorage) <-> 本机文件 <-> Hermes agent
-// 仅监听 127.0.0.1:5177，只允许读写本目录 data/ 下的文件
+// 仅监听 127.0.0.1（默认 5177，可通过 WORKBENCH_BRIDGE_PORT 配置）
 // 控制：POST /control/stop 优雅退出（网页端「关闭」按钮调用）
 const http = require('http');
 const fs = require('fs');
@@ -9,7 +9,12 @@ const { execFile } = require('child_process');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const OUT_DIR = path.join(DATA_DIR, 'agent_out');
-const PORT = 5177;
+const portSetting = process.env.WORKBENCH_BRIDGE_PORT || '5177';
+if (!/^[1-9]\d*$/.test(portSetting) || Number(portSetting) > 65535) {
+  console.error('[bridge] WORKBENCH_BRIDGE_PORT must be an integer from 1 to 65535');
+  process.exit(2);
+}
+const PORT = Number(portSetting);
 // opencode 官网同步（用量数据来自 SSR 页面）
 const OC_WS = 'wrk_01KYYZWQJJ6T3H5AWJGRE638TN';
 const OC_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0';
@@ -251,11 +256,13 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'POST' && parts[0] === 'control' && parts[1] === 'stop') {
     send(res, 200, { ok: true, message: 'stopping' });
-    setTimeout(() => { try { server.close(); } catch (e) {} process.exit(0); }, 300);
+    setTimeout(shutdown, 100);
     return;
   }
   if (req.method === 'GET' && parts[0] === 'health') {
-    return send(res, 200, { ok: true, dir: DATA_DIR, out: OUT_DIR });
+    return send(res, 200, { ok: true, dir: DATA_DIR, out: OUT_DIR,
+      service: 'grad-workbench-bridge', pid: process.pid,
+      instance: process.env.WORKBENCH_INSTANCE_ID || null });
   }
   if (req.method === 'GET' && parts[0] === 'list' && parts[1]) {
     if (parts[1] !== 'agent_out') return send(res, 400, { error: 'only agent_out' });
@@ -882,6 +889,20 @@ const server = http.createServer((req, res) => {
   send(res, 404, { error: 'not found' });
 });
 
+let shuttingDown = false;
+function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  server.close(() => process.exit(0));
+  if (server.closeIdleConnections) server.closeIdleConnections();
+  setTimeout(() => process.exit(0), 5000).unref();
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+server.on('error', error => {
+  console.error('[bridge] listen failed:', error.message);
+  process.exit(1);
+});
 server.listen(PORT, '127.0.0.1', () => {
   console.log('[bridge] listening on http://127.0.0.1:' + PORT);
 });

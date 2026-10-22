@@ -2,6 +2,7 @@
 data/
 *.log
 papers/
+keepalive.json
 
 # 依赖
 node_modules/
