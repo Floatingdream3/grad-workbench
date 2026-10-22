@@ -36,7 +36,9 @@ function saveJSON(key, val) {
   scheduleSync();
 }
 /* ============ Agent 桥（本地服务 127.0.0.1:5177，自动同步到 data/sync.json） ============ */
-const BRIDGE = 'http://127.0.0.1:5177';
+const configuredBridgePort = window.WORKBENCH_CONFIG && window.WORKBENCH_CONFIG.bridgePort;
+const BRIDGE = 'http://127.0.0.1:' + (Number.isInteger(configuredBridgePort) && configuredBridgePort >= 1 && configuredBridgePort <= 65535 ? configuredBridgePort : 5177);
+const BRIDGE_SUPERVISED = !!(window.WORKBENCH_CONFIG && window.WORKBENCH_CONFIG.supervised);
 let bridgeOnline = false;
 let bridgeSyncTimer = null;
 function bridgeCheck() {
@@ -76,16 +78,19 @@ function updateBridgeUI() {
   }
   const el = document.getElementById('bridgeInd');
   if (el) {
-    el.textContent = bridgeOnline ? '⏹ 关闭桥服务' : '🔌 桥已关闭（点击开启）';
+    el.textContent = bridgeOnline ? (BRIDGE_SUPERVISED ? '🔄 重启桥服务' : '⏹ 关闭桥服务') : '🔌 桥已关闭（点击开启）';
     el.className = 'bridge-ind ' + (bridgeOnline ? 'on' : 'off');
   }
 }
 document.getElementById('bridgeInd').addEventListener('click', () => {
   if (bridgeOnline) {
-    myConfirm('关闭 Agent 桥服务？\n关闭后网页与 Agent 的数据同步暂停（已同步的数据不丢失）。\n下次需要时：双击桌面「开启工作台桥」，或对 Hermes 说「开桥」。', () => {
+    const notice = BRIDGE_SUPERVISED
+      ? '重启 Agent 桥服务？\n保活程序会自动重新启动桥服务。\n如需持续关闭，请按 README 的停止步骤退出保活程序。'
+      : '关闭 Agent 桥服务？\n关闭后网页与 Agent 的数据同步暂停（已同步的数据不丢失）。\n下次需要时：双击桌面「开启工作台桥」，或对 Hermes 说「开桥」。';
+    myConfirm(notice, () => {
       fetch(BRIDGE + '/control/stop', { method: 'POST', mode: 'cors' })
-        .then(() => { bridgeOnline = false; updateBridgeUI(); toast('✅ 桥服务已关闭，内存已释放。'); })
-        .catch(() => { bridgeOnline = false; updateBridgeUI(); toast('桥服务已关闭。'); });
+        .then(() => { bridgeOnline = false; updateBridgeUI(); toast(BRIDGE_SUPERVISED ? '桥服务正在重启，请稍候。' : '✅ 桥服务已关闭，内存已释放。'); })
+        .catch(() => { bridgeOnline = false; updateBridgeUI(); toast(BRIDGE_SUPERVISED ? '桥连接已断开，保活程序将尝试恢复。' : '桥服务已关闭。'); });
     });
   } else {
     toast('开启 Agent 桥的两种方式：\n① 双击桌面「开启工作台桥」图标\n② 在 Hermes 对话里说「开桥」，我会帮你启动');
@@ -95,7 +100,7 @@ document.getElementById('bridgeInd').addEventListener('click', () => {
 (function () {
   if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
   try {
-    fetch('http://127.0.0.1:5177/sync')
+    fetch(BRIDGE + '/sync')
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || typeof d !== 'object') return;

@@ -1,0 +1,7 @@
+' Template: install with `py -3 keepalive.py install-startup`.
+' Paths and command are filled in by the installer; do not copy this template directly.
+Option Explicit
+Dim shell
+Set shell = CreateObject("WScript.Shell")
+shell.CurrentDirectory = @@WORKDIR@@
+shell.Run @@COMMAND@@, 0, False

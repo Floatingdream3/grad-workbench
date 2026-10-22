@@ -1,0 +1,12 @@
+{
+  "bridge_port": 5177,
+  "static_port": 8899,
+  "check_interval": 30,
+  "request_timeout": 2,
+  "startup_timeout": 15,
+  "failure_threshold": 3,
+  "restart_delay": 1,
+  "max_restart_delay": 60,
+  "shutdown_timeout": 5,
+  "node": "node"
+}
