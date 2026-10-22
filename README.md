@@ -55,6 +55,12 @@ python -m http.server 8899   # 或 npx serve -p 8899
 
 > 💡 附带 `keepalive.py` 保活脚本：每 30 秒自动检测两个端口，服务挂了自动重启。
 
+### Agent 功能配置（Hermes）
+
+Agent 对话、文献深度分析和自动文献导入需要本机 Hermes。复制 `hermes.config.example.json` 为 `hermes.local.json`，填写 `HERMES_HOME`（Hermes 工作目录）和 `HERMES_PYTHON`（其 Python 解释器完整路径），再启动桥服务。也支持同名环境变量，优先于本地文件；启动前会检查目录和运行文件，并明确提示配置或启动错误。
+
+详见 [Windows 配置教程、故障排查与离线测试](docs/hermes-windows.md)。本地配置文件不入库，教程和测试不需要真实 API 密钥。
+
 ### 方式三：开机自启（推荐重度用户）
 
 Windows 下把 `Startup` 目录里的 VBS 指向 `keepalive.py` 即可实现静默自启。
@@ -62,7 +68,7 @@ Windows 下把 `Startup` 目录里的 VBS 指向 `keepalive.py` 即可实现静�
 ## 🎨 定制属于你自己的版本
 
 1. **改名字**：全局搜索「读研工作台」替换成你的标题
-2. **改研究方向**：编辑 `bridge-server.js` 中 `analysis` prompt 里的研究领域描述
+2. **改研究方向**：编辑 `agent_runner.py` 中 `SCENES['analysis']` 的研究方向描述
 3. **加网站**：网站索引页点「＋ 添加」即可，支持拖拽排序
 4. **配 API**：API 管理页各标签填入你自己的 Key / Cookie（只存本地）
 5. **换词库**：`wordbooks/` 下按 JSON 格式添加自定义词库
@@ -77,6 +83,12 @@ grad-workbench/
 ├── bridge-server.js    # 可选：本地桥服务（Node）
 ├── keepalive.py        # 可选：服务保活脚本
 ├── agent_runner.py     # 可选：AI Agent 运行器
+├── hermes-config.js    # 桥服务的 Hermes 配置解析与检查
+├── hermes_config.py    # Python 运行器使用相同配置规则
+├── agent-process.js    # Agent 子进程与超时处理
+├── hermes.config.example.json # 本机配置示例
+├── docs/hermes-windows.md     # Windows 配置与离线测试教程
+├── tests/              # 不依赖真实 Hermes 的 Node/Python 测试
 ├── assets/             # 图标资源
 └── wordbooks/          # 英语词库（JSON）
 ```
