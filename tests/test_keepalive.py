@@ -176,7 +176,9 @@ class SupervisorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(prefix="workbench 中文 ")
         self.addCleanup(self.temporary.cleanup)
-        self.base = Path(self.temporary.name)
+        # Hosted Windows runners may expose TEMP via an 8.3 alias (RUNNER~1).
+        # Match the canonical paths used by the supervisor and Node.js.
+        self.base = Path(self.temporary.name).resolve()
         self.project = self.base / "project with spaces 中文"
         self.project.mkdir()
         (self.project / "Startup").mkdir()
